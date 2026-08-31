@@ -1,26 +1,264 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Papel y tinta */
+  --paper: #f4f0e6;
+  --paper-2: #eee9dc;
+  --paper-3: #e6e0d0;
+  --ink: #221f1a;
+  --ink-60: #221f1acc;
+  --ink-40: #221f1a80;
+
+  /* Líneas técnicas */
+  --blueprint: #3a5a78;
+  --blueprint-30: #3a5a784d;
+  --blueprint-15: #3a5a7826;
+
+  /* Acento */
+  --accent: #b8502e;
+  --accent-15: #b8502e26;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-ink: var(--ink);
+  --color-blueprint: var(--blueprint);
+  --color-accent: var(--accent);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-15);
+  color: var(--ink);
+}
+
+/* Grilla milimetrada de fondo: cuadrícula fina + cuadrícula gruesa */
+.blueprint-grid {
+  background-image:
+    linear-gradient(to right, var(--blueprint-15) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--blueprint-15) 1px, transparent 1px),
+    linear-gradient(to right, var(--blueprint-15) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--blueprint-15) 1px, transparent 1px);
+  background-size:
+    100px 100px,
+    100px 100px,
+    20px 20px,
+    20px 20px;
+  background-position: -1px -1px;
+}
+
+/* Etiqueta monoespaciada de anotación técnica */
+.tech-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Marcas de escuadra en las esquinas de una hoja */
+.corner-marks::before,
+.corner-marks::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--blueprint);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.corner-marks::before {
+  top: 0;
+  left: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.corner-marks::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* Aparición al entrar en viewport */
+@keyframes draw-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.draw-in {
+  animation: draw-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dash-run {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .draw-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Transición entre la hoja ampliada y las fichas (carrusel vertical) */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(*) {
+    animation-duration: 640ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* El cruce por defecto usa mix-blend-mode: plus-lighter, que sobre el papel
+     crema produce un destello. Se reemplaza por un fundido normal. */
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    mix-blend-mode: normal;
+  }
+
+  /* La captura vieja se va temprano y la nueva entra despacio: así casi no se
+     ven los fotogramas en los que la ficha está estirada para encajar. */
+  ::view-transition-old(*) {
+    animation: vt-fade-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(*) {
+    animation: vt-fade-in 480ms 160ms cubic-bezier(0, 0, 0.2, 1) both;
+  }
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* El resto de la página no participa: solo se mueven las piezas nombradas */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* --- Diagrama despiezado de habilidades --- */
+
+/* Las piezas sueltas flotan apenas; la seleccionada queda fija en su lugar. */
+@keyframes piece-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.piece-float {
+  animation: piece-float 6s ease-in-out infinite;
+}
+
+/* La línea de callout entra dibujándose hacia la ficha */
+@keyframes callout-in {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 22;
+  }
+  to {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.callout-in {
+  animation: callout-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* El contenido de la ficha se renueva con un fundido corto */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Barras de desplazamiento --- */
+
+/* Propiedades estándar: las usan los navegadores actuales. */
+html {
+  scrollbar-color: var(--blueprint-30) var(--paper-2);
+  scrollbar-width: thin;
+}
+
+/* Los contenedores con scroll propio (diagramas anchos) heredan el mismo trato. */
+*,
+*::before,
+*::after {
+  scrollbar-color: var(--blueprint-30) var(--paper-2);
+  scrollbar-width: thin;
+}
+
+/* Respaldo para navegadores que solo entienden las pseudo-clases de WebKit. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--blueprint-30);
+  border: 3px solid var(--paper-2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--blueprint);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--paper-2);
 }
